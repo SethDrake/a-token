@@ -17,12 +17,10 @@ I2C_HandleTypeDef i2c;
 
 SSD1306 display;
 SYSTEM_MODE systemMode;
-GRPAH_MODE graphMode;
+WIFI_STATE wifiState;
 
-bool sensorOk;
-
-const char logoStr[] = " TOTP TOKEN V.0.1";
-const char errorStr[] = "  SENSOR ERROR!  ";
+const char logoStr[] =  " TOTP TOKEN V.0.1";
+const char errorStr[] = "    WIFI ERROR!  ";
 
 osThreadId processKeysTaskHandle;
 osThreadId drawDataTaskHandle;
@@ -42,31 +40,6 @@ void DBG_Configuration()
 
 void SystemClock_Configuration()
 {
-	
-	/*RCC_OscInitTypeDef RCC_OscInitStruct;
-	RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
-	RCC_OscInitStruct.HSEState = RCC_HSE_ON;
-	RCC_OscInitStruct.HSEPredivValue = RCC_HSE_PREDIV_DIV1;
-	RCC_OscInitStruct.HSIState = RCC_HSI_OFF;
-	RCC_OscInitStruct.PLL.PLLState    = RCC_PLL_ON;
-	RCC_OscInitStruct.PLL.PLLSource   = RCC_PLLSOURCE_HSE;
-	RCC_OscInitStruct.PLL.PLLMUL      = RCC_PLL_MUL9;
-	if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
-	{
-		while (true); //error on init clock
-	}*/
-
-	/*RCC_ClkInitTypeDef RCC_ClkInitStruct;
-	RCC_ClkInitStruct.ClockType = (RCC_CLOCKTYPE_SYSCLK | RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_PCLK1 | RCC_CLOCKTYPE_PCLK2);
-	RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
-	RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
-	RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
-	RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV2;
-	if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_2) != HAL_OK)
-	{
-		errorHandler(); //error on init clock
-	}*/
-
 	/*RCC_PeriphCLKInitTypeDef PeriphClkInit;
 	PeriphClkInit.PeriphClockSelection = RCC_PERIPHCLK_USB;
 	PeriphClkInit.UsbClockSelection = RCC_USBCLKSOURCE_PLL_DIV1_5;
@@ -122,7 +95,7 @@ void I2C_Configuration(I2C_HandleTypeDef* i2cHandle)
 void USART_Configuration(UART_HandleTypeDef* usartHandle)
 {
 	usartHandle->Instance			= USART1;
-	usartHandle->Init.BaudRate		= 9600;
+	usartHandle->Init.BaudRate		= 115200;
 	usartHandle->Init.WordLength	= UART_WORDLENGTH_8B;
 	usartHandle->Init.StopBits		= UART_STOPBITS_1;
 	usartHandle->Init.Parity		= UART_PARITY_NONE;
@@ -169,7 +142,7 @@ void GPIO_Configuration(void)
 
 		/* Configure KEYBOARD pins */
 	GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-	GPIO_InitStruct.Pull = GPIO_PULLUP;
+	GPIO_InitStruct.Pull = GPIO_NOPULL;
 	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
 	GPIO_InitStruct.Pin = KBRD_PIN;
 	HAL_GPIO_Init(KBRD_PORT, &GPIO_InitStruct);
@@ -243,15 +216,24 @@ void drawDataTask(void const * argument)
 		{
 			display.sleepMode(true);
 		}
-		if (sensorOk && !display.IsSleep())
+		if (!display.IsSleep())
 		{
 			display.clearScreen();
 			{
 				display.printf(12, 50, logoStr);
 				display.drawLine(0, 44, 127, 44);
-				display.printf(12, 30, "SENSOR PREHEATING ");
-				display.printf(12, 5, "C: %ds.", cntr / 2);
-				cntr++;
+				if (wifiState == WIFI_LOADING)
+				{
+					display.printf(12, 30, "  WIFI LOADING   ");	
+				}
+				else if (wifiState == WIFI_CONNECTED)
+				{
+					display.printf(12, 30, "  WIFI CONNECTED ");	
+				}
+				else if (wifiState == WIFI_ERROR)
+				{
+					display.printf(12, 30, "  WIFI ERROR     ");	
+				}
 			}
 			display.drawPixel(0, 63, point);
 			display.drawPixel(1, 63, point);
@@ -278,7 +260,7 @@ void processKeysTask(void const * argument)
 			osDelay(350);
 			return;
 		}
-		bool keyPressed = !HAL_GPIO_ReadPin(KBRD_PORT, KBRD_PIN);
+		bool keyPressed = HAL_GPIO_ReadPin(KBRD_PORT, KBRD_PIN);
 		if (keyPressed)
 		{
 			if (systemMode == ACTIVE)
@@ -290,22 +272,7 @@ void processKeysTask(void const * argument)
 				}
 				else //short press
 				{
-					if (graphMode == SECONDS)
-					{
-						graphMode = MINUTES;
-					}
-					else if (graphMode == MINUTES)
-					{
-						graphMode = HOURS;
-					}
-					else if (graphMode == HOURS)
-					{
-						graphMode = STATISTICS;
-					}
-					else if (graphMode == STATISTICS)
-					{
-						graphMode = SECONDS;
-					}
+					//
 				}
 			}
 			else
@@ -344,9 +311,8 @@ int main()
 	DMA_I2C_TX_Configuration(&i2cDmaTx);
 	//__HAL_LINKDMA(&i2c, hdmatx, i2cDmaTx);
 
-
+	wifiState = WIFI_LOADING;
 	systemMode = LOADING;
-	graphMode = SECONDS;
 
 	display.initDisplay(&i2c);
 	display.setFont(font5x7);

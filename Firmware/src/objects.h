@@ -3,23 +3,6 @@
 #define __OBJECTS_H_
 #include "drivers/inc/ssd1306.h"
 
-
-template<class ForwardIt>
-	ForwardIt max_element(ForwardIt first, ForwardIt last)
-	{
-		if (first == last) {
-			return last;
-		}
-		ForwardIt largest = first;
-		++first;
-		for (; first != last; ++first) {
-			if (*largest < *first) {
-				largest = first;
-			}
-		}
-		return largest;
-	}
-
 typedef enum
 { 
 	LOADING = 0,
@@ -29,14 +12,13 @@ typedef enum
 
 typedef enum
 { 
-	SECONDS = 0,
-	MINUTES,
-	HOURS,
-	STATISTICS
-} GRPAH_MODE;
+	WIFI_LOADING = 0,
+	WIFI_CONNECTED,
+	WIFI_ERROR
+} WIFI_STATE;
 
 extern SYSTEM_MODE systemMode;
-extern GRPAH_MODE graphMode;
+extern WIFI_STATE wifiState;
 
 extern SSD1306 display;
 

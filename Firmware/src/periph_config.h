@@ -10,7 +10,7 @@
 #define I2C_SCL			GPIO_PIN_6
 #define I2C_SDA			GPIO_PIN_7
 
-#define KBRD_PORT		GPIOB
+#define KBRD_PORT		GPIOA
 #define KBRD_PIN		GPIO_PIN_0
 
 #define USART_PORT		GPIOA
