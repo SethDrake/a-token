@@ -136,7 +136,7 @@ void GPIO_Configuration(void)
 
 		/* USART1 PINS */
 	GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
-	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
+	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
 	GPIO_InitStruct.Pin = USART_RX | USART_TX;
 	HAL_GPIO_Init(USART_PORT, &GPIO_InitStruct);
 
@@ -235,10 +235,8 @@ void drawDataTask(void const * argument)
 					display.printf(12, 30, "  WIFI ERROR     ");	
 				}
 			}
-			display.drawPixel(0, 63, point);
-			display.drawPixel(1, 63, point);
-			display.drawPixel(0, 62, point);
-			display.drawPixel(1, 62, point);
+			display.drawLine(0, 62, 1, 62, point);
+			display.drawLine(0, 63, 1, 63, point);
 			point = !point;
 			display.drawFramebuffer();
 		}
