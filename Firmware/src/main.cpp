@@ -16,6 +16,8 @@ UART_HandleTypeDef uart;
 I2C_HandleTypeDef i2c;
 
 SSD1306 display;
+ESP8266 wifi;
+
 SYSTEM_MODE systemMode;
 WIFI_STATE wifiState;
 
@@ -40,6 +42,62 @@ void DBG_Configuration()
 
 void SystemClock_Configuration()
 {
+	__IO uint32_t StartUpCounter = 0, HSEStatus;
+  
+	/* SYSCLK, HCLK, PCLK2 and PCLK1 configuration ---------------------------*/    
+	/* Enable HSE */    
+	RCC->CR |= ((uint32_t)RCC_CR_HSEON);
+ 
+    /* Wait till HSE is ready and if Time out is reached exit */
+	do
+	{
+		HSEStatus = RCC->CR & RCC_CR_HSERDY;
+		StartUpCounter++;  
+	} while ((HSEStatus == 0) && (StartUpCounter != HSE_STARTUP_TIMEOUT));
+
+	if ((RCC->CR & RCC_CR_HSERDY) != RESET)
+	{
+		/* Enable Prefetch Buffer */
+		FLASH->ACR |= FLASH_ACR_PRFTBE;
+
+		    /* Flash 2 wait state */
+		FLASH->ACR &= (uint32_t)((uint32_t)~FLASH_ACR_LATENCY);
+		FLASH->ACR |= (uint32_t)FLASH_ACR_LATENCY_2;    
+
+ 
+		    /* HCLK = SYSCLK */
+		RCC->CFGR |= (uint32_t)RCC_CFGR_HPRE_DIV1;
+      
+		/* PCLK2 = HCLK */
+		RCC->CFGR |= (uint32_t)RCC_CFGR_PPRE2_DIV1;
+    
+		/* PCLK1 = HCLK */
+		RCC->CFGR |= (uint32_t)RCC_CFGR_PPRE1_DIV2;
+    
+		/*  PLL configuration: PLLCLK = HSE * 9 = 72 MHz */
+		RCC->CFGR &= (uint32_t)((uint32_t)~(RCC_CFGR_PLLSRC | RCC_CFGR_PLLXTPRE | RCC_CFGR_PLLMULL));
+		RCC->CFGR |= (uint32_t)(RCC_PLLSOURCE_HSE | RCC_CFGR_PLLMULL9);
+
+		    /* Enable PLL */
+		RCC->CR |= RCC_CR_PLLON;
+
+		    /* Wait till PLL is ready */
+		while ((RCC->CR & RCC_CR_PLLRDY) == 0)
+		{
+		}
+    
+		/* Select PLL as system clock source */
+		RCC->CFGR &= (uint32_t)((uint32_t)~(RCC_CFGR_SW));
+		RCC->CFGR |= (uint32_t)RCC_CFGR_SW_PLL;    
+
+		    /* Wait till PLL is used as system clock source */
+		while ((RCC->CFGR & (uint32_t)RCC_CFGR_SWS) != (uint32_t)0x08)
+		{
+		}
+	}
+	
+	SystemCoreClockUpdate();
+
 	/*RCC_PeriphCLKInitTypeDef PeriphClkInit;
 	PeriphClkInit.PeriphClockSelection = RCC_PERIPHCLK_USB;
 	PeriphClkInit.UsbClockSelection = RCC_USBCLKSOURCE_PLL_DIV1_5;
@@ -52,8 +110,6 @@ void SystemClock_Configuration()
 	HAL_SYSTICK_Config(HAL_RCC_GetHCLKFreq() / 1000);
 	/**Configure the Systick */
 	HAL_SYSTICK_CLKSourceConfig(SYSTICK_CLKSOURCE_HCLK);
-
-	SystemCoreClockUpdate();
 }
 
 void RCC_Configuration()
@@ -106,7 +162,6 @@ void USART_Configuration(UART_HandleTypeDef* usartHandle)
 	{
 		errorHandler("USART_INIT");
 	}
-	__HAL_UART_ENABLE(usartHandle);
 }
 
 void DMA_I2C_TX_Configuration(DMA_HandleTypeDef* dmaHandle)
@@ -136,8 +191,13 @@ void GPIO_Configuration(void)
 
 		/* USART1 PINS */
 	GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
-	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-	GPIO_InitStruct.Pin = USART_RX | USART_TX;
+	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
+	GPIO_InitStruct.Pin = USART_TX;
+	HAL_GPIO_Init(USART_PORT, &GPIO_InitStruct);
+
+	GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
+	GPIO_InitStruct.Pin = USART_RX;
 	HAL_GPIO_Init(USART_PORT, &GPIO_InitStruct);
 
 		/* Configure KEYBOARD pins */
@@ -183,6 +243,9 @@ void NVIC_Configuration(void) {
 
 	HAL_NVIC_SetPriority(DMA1_Channel6_IRQn, 15, 0);
 	HAL_NVIC_EnableIRQ(DMA1_Channel6_IRQn);
+
+	HAL_NVIC_SetPriority(USART1_IRQn, 15, 0);
+	HAL_NVIC_EnableIRQ(USART1_IRQn);
 }
 
 void switchSystemMode(SYSTEM_MODE mode)
@@ -219,21 +282,19 @@ void drawDataTask(void const * argument)
 		if (!display.IsSleep())
 		{
 			display.clearScreen();
+			display.printf(12, 50, logoStr);
+			display.drawLine(0, 44, 127, 44);
+			if (wifiState == WIFI_LOADING)
 			{
-				display.printf(12, 50, logoStr);
-				display.drawLine(0, 44, 127, 44);
-				if (wifiState == WIFI_LOADING)
-				{
-					display.printf(12, 30, "  WIFI LOADING   ");	
-				}
-				else if (wifiState == WIFI_CONNECTED)
-				{
-					display.printf(12, 30, "  WIFI CONNECTED ");	
-				}
-				else if (wifiState == WIFI_ERROR)
-				{
-					display.printf(12, 30, "  WIFI ERROR     ");	
-				}
+				display.printf(12, 30, "  WIFI LOADING   ");	
+			}
+			else if (wifiState == WIFI_CONNECTED)
+			{
+				display.printf(12, 30, "  WIFI CONNECTED ");	
+			}
+			else if (wifiState == WIFI_ERROR)
+			{
+				display.printf(12, 30, "  WIFI ERROR     ");	
 			}
 			display.drawLine(0, 62, 1, 62, point);
 			display.drawLine(0, 63, 1, 63, point);
@@ -319,6 +380,18 @@ int main()
 	display.drawLine(0, 44, 127, 44);
 	display.printf(12, 15, ".... LOADING ....");
 	display.drawFramebuffer();
+
+	wifi.initModule(&uart, &display);
+	wifiState = WIFI_LOADING;
+	if (wifi.ConfigureModule("GAMMA_14N", "Access117"))
+	{
+		wifiState = WIFI_CONNECTED;
+		wifi.FindTimeFromServer("www.google.com");
+	}
+	else
+	{
+		wifiState = WIFI_ERROR;		
+	}
 
 	systemMode = ACTIVE;
 

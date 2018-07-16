@@ -132,6 +132,7 @@
     <ClCompile Include="C:\Users\serge\AppData\Local\VisualGDB\EmbeddedBSPs\arm-eabi\com.sysprogs.arm.stm32\STM32F1xxxx\STM32F1xx_HAL_Driver\Src\stm32f1xx_ll_usb.c" />
     <ClCompile Include="C:\Users\serge\AppData\Local\VisualGDB\EmbeddedBSPs\arm-eabi\com.sysprogs.arm.stm32\STM32F1xxxx\STM32F1xx_HAL_Driver\Src\stm32f1xx_ll_utils.c" />
     <ClCompile Include="src\delay.cpp" />
+    <ClCompile Include="src\drivers\src\esp8266.cpp" />
     <ClCompile Include="src\interrupts.cpp" />
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\drivers\src\ssd1306.cpp" />
@@ -248,6 +249,7 @@
     <ClInclude Include="C:\Users\serge\AppData\Local\VisualGDB\EmbeddedBSPs\arm-eabi\com.sysprogs.arm.stm32\STM32F1xxxx\STM32F1xx_HAL_Driver\Inc\stm32f1xx_ll_utils.h" />
     <ClInclude Include="C:\Users\serge\AppData\Local\VisualGDB\EmbeddedBSPs\arm-eabi\com.sysprogs.arm.stm32\STM32F1xxxx\STM32F1xx_HAL_Driver\Inc\stm32f1xx_ll_wwdg.h" />
     <ClInclude Include="src\delay.h" />
+    <ClInclude Include="src\drivers\inc\esp8266.h" />
     <ClInclude Include="src\drivers\inc\fonts.h" />
     <ClInclude Include="src\drivers\inc\ssd1306.h" />
     <ClInclude Include="src\interrupts.h" />

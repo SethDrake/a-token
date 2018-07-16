@@ -94,6 +94,11 @@ void __attribute__((interrupt("IRQ"))) TIM1_UP_IRQHandler(void)
 {
 	//HAL_TIM_IRQHandler(&htim1);	
 }
+	
+void __attribute__((interrupt("IRQ"))) USART1_IRQHandler(void)
+{
+	wifi.OnRxInterrupt();	
+}
 
 void hard_fault_handler(unsigned int * hardfault_args)
 {

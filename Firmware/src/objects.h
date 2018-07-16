@@ -2,6 +2,7 @@
 #ifndef __OBJECTS_H_
 #define __OBJECTS_H_
 #include "drivers/inc/ssd1306.h"
+#include "drivers/inc/esp8266.h"
 
 typedef enum
 { 
@@ -21,6 +22,7 @@ extern SYSTEM_MODE systemMode;
 extern WIFI_STATE wifiState;
 
 extern SSD1306 display;
+extern ESP8266 wifi;
 
 extern DMA_HandleTypeDef i2cDmaTx;
 extern TIM_HandleTypeDef htim1;
