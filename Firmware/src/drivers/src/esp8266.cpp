@@ -1,9 +1,8 @@
 
 #include "src/drivers/inc/esp8266.h"
-#include <cstring>
 
 
-ESP8266::ESP8266()
+ESP8266::ESP8266(): display(nullptr)
 {
 	this->usartHandle = NULL;
 	memset(buf, 0x00, ESP_RCV_BUF_SIZE);
@@ -37,9 +36,9 @@ bool ESP8266::SendCommandWithResponse(const char* cmd, const char* resp, const u
 	{
 		return false;	
 	}
-	HAL_UART_Receive(this->usartHandle, buf, ESP_RCV_BUF_SIZE, Timeout);
-	char* str = search_buffer((char*)buf, 64, (char*)resp, strlen(resp));
-	if (!str)
+	HAL_UART_Receive(this->usartHandle, (uint8_t*)buf, ESP_RCV_BUF_SIZE, Timeout);
+	char* exists = strstr((char*)buf, resp);
+	if (!exists)
 	{
 		return false;		
 	}
@@ -48,7 +47,7 @@ bool ESP8266::SendCommandWithResponse(const char* cmd, const char* resp, const u
 
 bool ESP8266::IsConnected(void)
 {
-	return SendCommandWithResponse("AT+CIFSR\r\n", "+CIFSR:APIP,", 500);
+	return SendCommandWithResponse("AT+CIFSR\r\n", "+CIFSR:STAIP,", 500);
 }
 
 bool ESP8266::ConfigureModule(const char* ssid, const char* password)
@@ -57,6 +56,20 @@ bool ESP8266::ConfigureModule(const char* ssid, const char* password)
 	{
 		return false;		
 	}
+	if (!SendCommandWithResponse("AT+GMR\r\n", "OK\r\n"))
+	{
+		return false;		
+	}
+	
+	// Get version
+	char* verStr = strstr((char*)buf, "AT version:");
+	char * atVer = strtok(verStr, "\r\n");
+	memset(at_version, 0x00, sizeof(at_version));
+	strcpy(at_version, atVer + 11);
+	verStr = strstr((char*)buf, "SDK version:");
+	char* sdkVer = strtok(verStr, "\r\n");
+	memset(sdk_version, 0x00, sizeof(sdk_version));
+	strcpy(sdk_version, sdkVer + 12);
 
 	//Config ESP8266
 	if (!SendCommandWithResponse("ATE0\r\n", "OK\r\n")) return false;
@@ -74,26 +87,33 @@ bool ESP8266::ConfigureModule(const char* ssid, const char* password)
 	return true;
 }
 
-char* ESP8266::FindTimeFromServer(const char* url)
+time_t  ESP8266::FindTimeFromServer(const char* url)
 {
 	if (!IsConnected())
 	{
-		return NULL;
+		return 0;
 	}
-	memset(send_buf, 0x00, 80);
+	memset(send_buf, 0x00, sizeof(send_buf));
 	sprintf(send_buf, "AT+CIPSTART=\"TCP\",\"%s\",80\r\n", url);
-	if (!SendCommandWithResponse((const char*)send_buf, "CONNECT\r\n", 500)) return NULL;
+	if (!SendCommandWithResponse((const char*)send_buf, "CONNECT\r\n", 500)) return 0;
 
-	if (!SendCommandWithResponse("AT+CIPSEND=15\r\n", "OK\r\n>")) return NULL;
-	if (!SendCommandWithResponse("HEAD HTTP/1.1\r\n", "OK\r\n"), 500) return NULL;
-	return NULL;
+	if (!SendCommandWithResponse("AT+CIPSEND=15\r\n", "OK\r\n>")) return 0;
+	if (!SendCommandWithResponse("HEAD HTTP/1.1\r\n", "SEND OK\r\n", 500)) return 0;
+	char* timeFromResp = strstr((char*)buf, "Date:");
+	timeFromResp = strstr(timeFromResp, ", ");
+	char * cutedTimeStr = strtok(timeFromResp, "\r\n");
+	memset(send_buf, 0x00, sizeof(send_buf));
+	strcpy(send_buf, cutedTimeStr + 2);
+	//parse date-time
+	struct tm tm;
+	if (strptime(send_buf, "%d %b %Y %H:%M:%S GMT", &tm) != NULL)
+	{
+		return mktime(&tm);	
+	}
+	return 0;
 }
 
-char* ESP8266::search_buffer(char* haystack, uint16_t haystacklen, char* needle, uint16_t needlelen)
-{ 
-	int searchlen = haystacklen - needlelen + 1;
-	for (; searchlen-- > 0; haystack++)
-		if (!memcmp(haystack, needle, needlelen))
-			return haystack;
-	return NULL;
+int8_t ESP8266::StrMonthToInt(const char* month)
+{
+	return 7;
 }

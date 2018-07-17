@@ -9,34 +9,33 @@
     <MainSourceDirectory>$(ProjectDir)</MainSourceDirectory>
     <EmbeddedProfileFile>stm32.xml</EmbeddedProfileFile>
   </Project>
-  <Build xsi:type="com.visualgdb.build.embedded">
-    <MakeFilePathRelativeToSourceDir>Makefile</MakeFilePathRelativeToSourceDir>
-    <MakeConfigurationName>Release</MakeConfigurationName>
-    <AdditionalMakeArguments>$(LocalMultiThreadedBuildFlags)</AdditionalMakeArguments>
-    <MakeCommandTemplate>
-      <SkipWhenRunningCommandList>false</SkipWhenRunningCommandList>
-      <RemoteHost>
-        <HostName>BuildMachine</HostName>
-        <Transport>BuiltinShortcut</Transport>
-      </RemoteHost>
-      <Command>cmd.exe</Command>
-      <Arguments>/c "$(TOOLCHAIN_ROOT)\bin\make.exe"</Arguments>
-      <WorkingDirectory>$(BuildDir)</WorkingDirectory>
-      <Environment>
-        <Records>
-          <Record>
-            <VariableName>LANG</VariableName>
-            <Value>en_US.UTF-8</Value>
-          </Record>
-          <Record>
-            <VariableName>PATH</VariableName>
-            <Value>$(TOOLCHAIN_ROOT)\bin;%PATH%</Value>
-          </Record>
-        </Records>
-      </Environment>
-      <BackgroundMode xsi:nil="true" />
-    </MakeCommandTemplate>
-    <ShowMemoryUtilizationSummary>true</ShowMemoryUtilizationSummary>
+  <Build xsi:type="com.visualgdb.build.msbuild">
+    <Toolchain>
+      <Name>ARM</Name>
+      <UniqueID>com.visualgdb.arm-eabi</UniqueID>
+      <Location>c:\SysGCC\arm-eabi</Location>
+      <UnixSystem>false</UnixSystem>
+      <GCC>c:\SysGCC\arm-eabi\bin\arm-eabi-gcc.exe</GCC>
+      <GXX>c:\SysGCC\arm-eabi\bin\arm-eabi-g++.exe</GXX>
+      <GDB>c:\SysGCC\arm-eabi\bin\arm-eabi-gdb.exe</GDB>
+      <AR>c:\SysGCC\arm-eabi\bin\arm-eabi-ar.exe</AR>
+      <OBJCOPY>c:\SysGCC\arm-eabi\bin\arm-eabi-objcopy.exe</OBJCOPY>
+      <Make>c:\SysGCC\arm-eabi\bin\make.exe</Make>
+      <AdditionalPathDirectories>
+        <string>c:\SysGCC\arm-eabi\bin</string>
+      </AdditionalPathDirectories>
+      <RequireCmdExe>true</RequireCmdExe>
+      <RequireCtrlBreak>false</RequireCtrlBreak>
+      <SourceDirMapping>
+        <Directories />
+        <PathStyle>MinGWUnixSlash</PathStyle>
+      </SourceDirMapping>
+    </Toolchain>
+    <ProjectFile>a-token.vcxproj</ProjectFile>
+    <RemoteBuildEnvironment>
+      <Records />
+    </RemoteBuildEnvironment>
+    <ParallelJobCount>1</ParallelJobCount>
   </Build>
   <Debug xsi:type="com.visualgdb.debug.embedded">
     <AdditionalStartupCommands />

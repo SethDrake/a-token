@@ -9,7 +9,6 @@
 #include "periph_config.h"
 #include "objects.h"
 #include "delay.h"
-#include <cerrno>
 
 DMA_HandleTypeDef i2cDmaTx;
 UART_HandleTypeDef uart;
@@ -17,6 +16,8 @@ I2C_HandleTypeDef i2c;
 
 SSD1306 display;
 ESP8266 wifi;
+
+time_t currentTimeGmt;
 
 SYSTEM_MODE systemMode;
 WIFI_STATE wifiState;
@@ -290,7 +291,10 @@ void drawDataTask(void const * argument)
 			}
 			else if (wifiState == WIFI_CONNECTED)
 			{
-				display.printf(12, 30, "  WIFI CONNECTED ");	
+				display.printf(12, 30, "  WIFI CONNECTED ");
+				currentTimeGmt = wifi.FindTimeFromServer("www.google.com");
+				char* timestr = ctime(&currentTimeGmt);
+				display.printf(10, 5, timestr);
 			}
 			else if (wifiState == WIFI_ERROR)
 			{
@@ -302,7 +306,7 @@ void drawDataTask(void const * argument)
 			display.drawFramebuffer();
 		}
 
-		osDelay(500);
+		osDelay(1000);
 	}
 }
 
@@ -383,10 +387,11 @@ int main()
 
 	wifi.initModule(&uart, &display);
 	wifiState = WIFI_LOADING;
+	display.printf(12, 15, ".. WIFI CONFIG ..");
+	display.drawFramebuffer();
 	if (wifi.ConfigureModule("GAMMA_14N", "Access117"))
 	{
 		wifiState = WIFI_CONNECTED;
-		wifi.FindTimeFromServer("www.google.com");
 	}
 	else
 	{

@@ -5,7 +5,7 @@
 BINARYDIR := Debug
 
 #Additional flags
-PREPROCESSOR_MACROS := DEBUG=1
+PREPROCESSOR_MACROS := DEBUG=1 __XSI_VISIBLE
 INCLUDE_DIRS := src/freertos/include src/freertos/portable src
 LIBRARY_DIRS := src/freertos/portable src
 LIBRARY_NAMES := 

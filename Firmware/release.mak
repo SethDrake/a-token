@@ -5,7 +5,7 @@
 BINARYDIR := Release
 
 #Additional flags
-PREPROCESSOR_MACROS := NDEBUG=1 RELEASE=1
+PREPROCESSOR_MACROS := NDEBUG=1 RELEASE=1 __XSI_VISIBLE
 INCLUDE_DIRS := src/freertos/include src/freertos/portable src src/usb
 LIBRARY_DIRS := src/freertos/portable src src/usb
 LIBRARY_NAMES := 

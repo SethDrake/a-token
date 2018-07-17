@@ -1276,6 +1276,9 @@
 #ifndef __DA_FBIT__
 #define __DA_FBIT__ 31
 #endif
+#ifndef __XSI_VISIBLE
+#define __XSI_VISIBLE 1
+#endif
 #ifndef __UINT32_TYPE__
 #define __UINT32_TYPE__ long unsigned int
 #endif
